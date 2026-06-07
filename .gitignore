@@ -4,6 +4,5 @@ out/
 next-env.d.ts
 tsconfig.tsbuildinfo
 
-# phase execution outputs
-phases/**/phase*-output.json
-phases/**/step*-output.json
+# review gate logs (scripts/run-gates.mjs)
+.gates/
