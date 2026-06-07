@@ -1,13 +1,60 @@
 이 프로젝트는 Harness 프레임워크를 사용한다. 아래 워크플로우에 따라 작업을 진행하라.
 
-이 커맨드는 인자에 따라 두 모드로 동작한다.
+이 커맨드는 인자에 따라 **세 모드**로 동작한다.
 
-- **인자 없음** (또는 `plan`) → phase를 설계하고 파일을 생성하는 모드. 워크플로우 **A~D**를 따른다.
-- **`execute {task-name}`** → 이미 만들어진 phase를 실행하는 모드. 워크플로우 **E**를 따른다.
+- **인자 없음** → **자동 오케스트레이션 모드**. docs로부터 전체 phase를 분할(1회 승인)한 뒤, 각 phase의 세부 계획 생성·실행·커밋을 모든 phase가 끝날 때까지 자동 반복한다. 워크플로우 **O**를 따른다.
+- **`plan`** → **세부 계획(레벨 2) 설계 모드**. 한 task의 step을 설계하고 파일만 생성한 뒤 멈춘다. 워크플로우 **A~D**를 따른다.
+- **`execute {task-name}`** → **실행 모드**. 이미 만들어진 한 task의 step을 실행한다. 워크플로우 **E**를 따른다.
 
 전달된 인자: `$ARGUMENTS`
 
+> **두 "레벨" 구분(설계 핵심)**:
+> - **레벨 1 (전체 계획)**: 프로젝트를 여러 phase로 분할 → `phases/index.json`. (워크플로우 O-1에서만 자동 생성)
+> - **레벨 2 (세부 계획)**: 한 phase를 step0/step1/...로 분할 → `phases/{phase}/index.json` + `step{N}.md`. (워크플로우 A~D)
+>
+> 자동 모드(O)는 레벨 1을 만들고, 각 phase에 대해 레벨 2 설계(C·D)와 실행(E)을 반복 호출하는 오케스트레이터다.
+
 ---
+
+## O. 자동 오케스트레이션 (인자 없음 = `/harness`)
+
+`$ARGUMENTS`가 비어 있으면, 메인 Claude가 아래 절차로 **전체 계획 → 각 phase 세부계획·실행·커밋**을 자동 반복한다. 이 모드는 기존 C·D(레벨 2 설계)와 E(실행)를 **재사용**한다 — 절차를 새로 중복 서술하지 말고 해당 섹션을 그대로 호출하라.
+
+핵심 원칙:
+
+- **사용자 게이트는 O-1의 전체 계획 승인 1회뿐.** 각 phase의 세부 계획(레벨 2)은 피드백 요청 없이 자동 생성·실행한다.
+- 글로벌 CLAUDE.md "오류 자동 해결 금지" 규칙을 지킨다: `error`/`blocked`이거나 리뷰가 자동 수정으로도 통과하지 못하면 **멈추고 원인을 상세 보고**한다.
+
+### O-1. 전체 계획 수립 (레벨 1) + 유일한 게이트
+
+1. `docs/` 전체(PRD·ARCHITECTURE·ADR·UI_GUIDE·있으면 API)를 읽는다. 필요시 Explore 에이전트를 병렬로 사용한다.
+2. 프로젝트를 phase들로 분할한다. 각 phase는 **독립적으로 실행·리뷰 가능한 단위**여야 하며, kebab-case slug와 `goal`(한두 줄 목표/스코프)을 갖는다.
+3. `phases/index.json` **초안**(아래 D-1 스키마)을 사용자에게 제시하고 **승인을 요청**한다. → 이것이 이 모드의 유일한 사용자 게이트다.
+4. 승인 전에는 어떤 파일도 생성하지 않고 실행도 하지 않는다. 승인되면 `phases/index.json`을 기록한다.
+5. **전용 브랜치 준비**: 현재 기본 브랜치(main)이면 작업 브랜치 `harness/{slug}`를 생성·체크아웃한다(slug는 전체 작업을 대표하는 한두 단어). 이미 작업 브랜치 위면 그대로 사용한다.
+
+### O-2. Phase 루프 (pending phase가 없을 때까지 반복)
+
+1. **(a) 다음 `pending` phase 선택** — `phases/index.json`에서 가장 앞선 pending 항목.
+2. **(b) 세부 계획 자동 생성 (레벨 2)** — 워크플로우 C의 설계 원칙대로 그 phase의 step을 설계하고, D-2·D-3에 따라 `phases/{phase}/index.json`과 `step{N}.md`들을 생성한다. **피드백을 요청하지 말고 진행한다**(O-1에서 이미 승인됨). 이전에 완료된 phase들의 `summary`를 컨텍스트로 참고해 인터페이스를 일관되게 맞춘다.
+3. **(c) 실행** — 그 phase에 대해 워크플로우 **E 전체**(E-1 준비 → E-2 step 루프 → E-3 리뷰 → E-4 마무리)를 수행한다.
+4. **(d) 결과 분기**:
+   - 리뷰 `VERDICT: PASS`로 phase 완료 → **(e) git 처리** 후 다음 phase로.
+   - `error` / `blocked` / 리뷰가 자동 수정으로도 `ISSUES_FOUND` → **커밋하지 않고 즉시 중단**하고, 원인(의존성 체인 + 근본 원인)을 상세 보고한다. (이전까지 완료된 phase의 커밋은 이미 보존되어 있다.)
+5. **(e) git commit → push** (PASS인 phase에 한해):
+   - 변경된 파일을 **명시적으로 add**한다. **`git add -A` 금지**(글로벌 룰) — `.env`/credentials/큰 바이너리가 staged되는 사고를 막는다. `phases/{phase}/**`와 그 phase가 생성/수정한 소스 파일만 add한다.
+   - conventional commit으로 기록한다(예: `feat({phase}): {goal 요약}`). 메시지 본문에 "왜"를 적고, 마지막에 글로벌 규약대로 `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>` 트레일러를 붙인다.
+   - `git push`한다(작업 브랜치 첫 push면 `-u origin {branch}`). **일반 push만 — `--force`/`--no-verify` 사용 금지**(PreToolUse 훅이 force push를 차단한다).
+
+### O-3. 마무리
+
+1. 모든 phase가 `completed`가 되면 전체 완료를 보고한다(작업 브랜치명 안내).
+2. **PR 생성은 자동으로 하지 않는다** — 필요하면 사용자가 직접 한다.
+3. 루프가 중단된 뒤 `/harness`를 다시 호출하면, `phases/index.json`의 디스크 상태를 기준으로 남은 `pending` phase부터 재개된다.
+
+---
+
+> **A~D는 레벨 2(단일 task의 step 설계)다.** `/harness plan`으로 직접 호출하거나, 자동 모드(O-2b)가 phase마다 호출한다. 프로젝트 전체를 phase로 쪼개는 레벨 1은 O-1에서만 다룬다.
 
 ## A. 탐색
 
@@ -46,6 +93,7 @@
   "phases": [
     {
       "dir": "0-mvp",
+      "goal": "한두 줄 목표/스코프",
       "status": "pending"
     }
   ]
@@ -53,6 +101,7 @@
 ```
 
 - `dir`: task 디렉토리명.
+- `goal`: 이 phase가 무엇을 만드는지 한두 줄 요약. 자동 모드(O-1)가 기록하고, 레벨 2 세부 설계(O-2b)가 step 설계의 입력으로 사용한다. (수동 `plan` 모드에서도 적어두면 좋다.)
 - `status`: `"pending"` | `"completed"` | `"error"` | `"blocked"`. 실행 모드(E)에서 자동으로 업데이트된다.
 - 타임스탬프(`completed_at`, `failed_at`, `blocked_at`)는 실행 모드(E)에서 상태 변경 시 자동 기록한다. 생성 시 넣지 않는다.
 
@@ -196,7 +245,8 @@ node scripts/run-gates.mjs typecheck lint  # 이 step 스코프의 타입/린트
 
 1. `index.json`에 `completed_at`을 기록한다.
 2. `phases/index.json`(top)의 해당 phase를 `status="completed"` + `completed_at`으로 갱신한다.
-3. **브랜치 생성·커밋은 자동으로 하지 않는다.** 변경사항 커밋은 사용자가 직접 하거나 `/tdd-loop`가 처리한다. 진행 상황은 `index.json`의 디스크 상태로 보존되므로, 중단 후 `/harness execute {task}`를 다시 호출하면 남은 pending step부터 재개된다.
+3. **(수동 execute 모드 기준) 브랜치 생성·커밋은 자동으로 하지 않는다.** 변경사항 커밋은 사용자가 직접 하거나 `/tdd-loop`가 처리한다. 진행 상황은 `index.json`의 디스크 상태로 보존되므로, 중단 후 `/harness execute {task}`를 다시 호출하면 남은 pending step부터 재개된다.
+   - 단, **자동 오케스트레이션 모드(O)** 에서는 phase가 리뷰 PASS로 끝날 때마다 O-2e가 전용 브랜치에 commit→push를 수행한다(자동 git은 O가 책임).
 
 ### E-5. 에러 복구
 
