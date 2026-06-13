@@ -1,0 +1,68 @@
+/* =============================================================================
+   Design tokens — SINGLE SOURCE OF TRUTH (docs/UI_GUIDE.md)
+   -----------------------------------------------------------------------------
+   Tailwind v4 `@theme`: 여기 선언한 토큰은 (1) `:root` CSS 변수로 emit되고
+   (2) Tailwind 네임스페이스(color · radius · spacing · shadow · ease)에 매핑돼
+   semantic 유틸(bg-surface, rounded-card, p-card, shadow-elevation-1 …)을 자동
+   생성한다. 컴포넌트는 raw/arbitrary 값 대신 이 유틸만 소비한다.
+
+   UI_GUIDE 원본 대비 네임스페이스 정합 조정(역할명·값은 동일):
+     space     네임스페이스 → spacing          (Tailwind spacing)
+     elevation 네임스페이스 → shadow-elevation  (Tailwind shadow)
+   숫자 spacing(p-1..p-8 = 4·8·12·16·24·32px)은 Tailwind 기본 spacing(4px) 스케일이
+   그대로 재현하므로 별도 토큰을 두지 않는다.
+   값만 바꾸고 역할명(토큰 이름)은 유지할 것.
+============================================================================= */
+
+@theme {
+  /* --- Color: surface --- */
+  --color-bg:             #0a0a0a; /* 페이지 배경 */
+  --color-surface:        #141414; /* 카드/패널 */
+  --color-surface-raised: #1c1c1c; /* 떠 있는 표면(드롭다운, 모달) */
+
+  /* --- Color: border --- */
+  --color-border:        #262626; /* 기본 경계선 */
+  --color-border-strong: #404040; /* 강조 경계선 */
+
+  /* --- Color: text --- */
+  --color-text:           #ffffff; /* 주 텍스트 */
+  --color-text-secondary: #d4d4d4; /* 본문 */
+  --color-text-muted:     #a3a3a3; /* 보조/라벨 */
+  --color-text-disabled:  #525252; /* 비활성 */
+  --color-text-inverse:   #0a0a0a; /* 밝은 배경 위 텍스트 */
+
+  /* --- Color: accent (브랜드/주요 액션) — 보라/인디고 금지 --- */
+  --color-accent:       #ffffff;
+  --color-accent-hover: #e5e5e5;
+  --color-accent-fg:    #0a0a0a; /* accent 위 텍스트 */
+
+  /* --- Color: state --- */
+  --color-success: #22c55e;
+  --color-error:   #ef4444;
+  --color-warning: #eab308;
+  --color-info:    #3b82f6;
+
+  /* --- Radius (역할별) --- */
+  --radius-sm:     4px;
+  --radius-md:     8px;
+  --radius-lg:     12px;
+  --radius-pill:   9999px;
+  --radius-card:   var(--radius-lg);
+  --radius-input:  var(--radius-md);
+  --radius-button: var(--radius-md);
+
+  /* --- Spacing (semantic; 숫자 스케일은 기본 --spacing 4px 사용) --- */
+  --spacing-card:    24px; /* 카드 내부 패딩  (= --space-6) */
+  --spacing-section: 32px; /* 섹션 간 간격    (= --space-8) */
+  --spacing-inline:  12px; /* 인라인 요소 gap (= --space-3) */
+
+  /* --- Elevation (subtle — 네온 글로우 금지) --- */
+  --shadow-elevation-0: none;
+  --shadow-elevation-1: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-elevation-2: 0 4px 12px rgb(0 0 0 / 0.5);
+
+  /* --- Motion (fade-in / slide-up 만 허용) --- */
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+}
