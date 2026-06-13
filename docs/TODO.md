@@ -26,7 +26,7 @@
 ## 진행률
 | Phase | 0 Infra | 1 Design | 2 Domain | 3 Search | 4 Convert | 5 Frontend | 6 QA |
 |-------|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| 상태  | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | ⬜ |
+| 상태  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ |
 
 (상태: ⬜ 미착수 · 🟦 진행중 · ✅ 완료)
 
@@ -154,13 +154,13 @@
 ## Phase 5 — UI 컴포넌트 & 페이지 (TDD/RTL) `[Frontend]`
 **목표**: 검색→결과→변환→다운로드를 한 화면에서 끝내는 UI를, semantic 토큰만으로 배선한다.
 
-- [ ] `Spinner`/`Skeleton`(토큰만) → 산출: `components/Spinner.tsx`, `components/Skeleton.tsx`
-- [ ] **테스트 먼저** `SearchBar.test.tsx` → 케이스: Enter/버튼 제출 콜백, 빈 입력 제출 차단, 로딩 중 중복제출 방지, aria-label
-- [ ] `components/SearchBar.tsx` 구현
-- [ ] **테스트 먼저** `VideoCard.test.tsx` → 케이스: 썸네일/제목/채널 렌더, 포맷 토글(mp3/mp4), 변환 클릭→로딩·버튼 비활성, 에러 시 인라인+재시도, 썸네일 로드 실패 placeholder, 긴 제목 truncate 클래스
-- [ ] `components/VideoCard.tsx` 구현(포맷 토글 + 변환/다운로드 버튼)
-- [ ] `components/ResultsGrid.tsx`(VideoCard 매핑) + `EmptyState`/`ErrorBanner`(렌더 테스트: 메시지 + 재시도 버튼)
-- [ ] `app/page.tsx`: 검색 상태머신(`idle|loading|success|empty|error`) + 카드별 변환 상태(`idle|loading|error`) 배선, `fetch /api/search`, 변환은 `fetch /api/convert`→`blob()`→`objectURL`→`<a>` 다운로드 트리거→`revokeObjectURL`, `AbortController` 보유
+- [x] `Spinner`/`Skeleton`(토큰만) → 산출: `components/Spinner.tsx`, `components/Skeleton.tsx`
+- [x] **테스트 먼저** `SearchBar.test.tsx` → 케이스: Enter/버튼 제출 콜백, 빈 입력 제출 차단, 로딩 중 중복제출 방지, aria-label
+- [x] `components/SearchBar.tsx` 구현
+- [x] **테스트 먼저** `VideoCard.test.tsx` → 케이스: 썸네일/제목/채널 렌더, 포맷 토글(mp3/mp4), 변환 클릭→로딩·버튼 비활성, 에러 시 인라인+재시도, 썸네일 로드 실패 placeholder, 긴 제목 truncate 클래스
+- [x] `components/VideoCard.tsx` 구현(포맷 토글 + 변환/다운로드 버튼)
+- [x] `components/ResultsGrid.tsx`(VideoCard 매핑) + `EmptyState`/`ErrorBanner`(렌더 테스트: 메시지 + 재시도 버튼)
+- [x] `app/page.tsx`: 검색 상태머신(`idle|loading|success|empty|error`) + 카드별 변환 상태(`idle|loading|error`) 배선, `fetch /api/search`, 변환은 `fetch /api/convert`→`blob()`→`objectURL`→`<a>` 다운로드 트리거→`revokeObjectURL`, `AbortController` 보유
 
 **게이트·수용**: 컴포넌트 테스트 green + 게이트 3종, **토큰 외 raw 값 0**.
 
