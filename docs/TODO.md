@@ -26,7 +26,7 @@
 ## 진행률
 | Phase | 0 Infra | 1 Design | 2 Domain | 3 Search | 4 Convert | 5 Frontend | 6 QA |
 |-------|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| 상태  | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 상태  | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 (상태: ⬜ 미착수 · 🟦 진행중 · ✅ 완료)
 
@@ -73,18 +73,18 @@
 ## Phase 2 — 타입 & 순수 유틸 (TDD) `[Domain]`
 **목표**: API·변환의 토대가 되는 타입과 검증/파일명 유틸을 테스트 우선으로 만든다.
 
-- [ ] `types/index.ts`: `VideoResult` / `ConvertFormat` / `ApiError` — `API.md` 데이터 모델과 정확히 일치(`duration?` optional 유지)
-- [ ] **테스트 먼저** `lib/validation.test.ts` → 케이스:
+- [x] `types/index.ts`: `VideoResult` / `ConvertFormat` / `ApiError` — `API.md` 데이터 모델과 정확히 일치(`duration?` optional 유지)
+- [x] **테스트 먼저** `lib/validation.test.ts` → 케이스:
   - videoId: 10자(❌)/11자(✅)/12자(❌), 허용문자 `A-Za-z0-9_-`, 금지문자(공백·`/`·`.` 등) ❌
-  - format: `mp3`/`mp4`(✅), `MP3`(정책 결정: 거부 또는 소문자 정규화), `wav`(❌)
-  - maxResults: 미지정→기본 12, 1·50(✅), 0·51·비숫자→`INVALID_MAX_RESULTS`(또는 클램프 — 정책 명시)
-- [ ] `lib/validation.ts` 구현(`isValidVideoId` / `parseFormat` / `parseMaxResults`)
-- [ ] **테스트 먼저** `lib/filename.test.ts` → 케이스:
+  - format: `mp3`/`mp4`(✅), `MP3`(정책: **소문자 정규화** 후 허용), `wav`(❌)
+  - maxResults: 미지정→기본 12, 1·50(✅), 0·51·비숫자→`null`(정책: **거부** — 라우트가 `INVALID_MAX_RESULTS`로 매핑)
+- [x] `lib/validation.ts` 구현(`isValidVideoId` / `parseFormat` / `parseMaxResults`)
+- [x] **테스트 먼저** `lib/filename.test.ts` → 케이스:
   - 금지문자 `/ \ : * ? " < > |` 제거, 제어문자/개행 제거
   - `..` 제거, 앞뒤 점/공백 trim
   - Windows 예약명 `CON/PRN/AUX/NUL/COM1-9/LPT1-9`(대소문자 무관) 회피
   - ~100자 truncate, 결과가 비면 `videoId`로 fallback
-- [ ] `lib/filename.ts` 구현(`sanitizeFilename(title, videoId, ext)`)
+- [x] `lib/filename.ts` 구현(`sanitizeFilename(title, videoId, ext)`)
 
 **게이트·수용**: 위 단위 테스트 전부 green + 게이트 3종.
 
