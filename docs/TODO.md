@@ -26,7 +26,7 @@
 ## 진행률
 | Phase | 0 Infra | 1 Design | 2 Domain | 3 Search | 4 Convert | 5 Frontend | 6 QA |
 |-------|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| 상태  | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 상태  | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 (상태: ⬜ 미착수 · 🟦 진행중 · ✅ 완료)
 
@@ -35,13 +35,13 @@
 ## Phase 0 — 프로젝트 스캐폴딩 & 토대 `[Infra]`
 **목표**: 빈 저장소에 Next.js 15 + TS strict + Tailwind v4 + Vitest/RTL 토대를 세우고 게이트가 돌게 한다.
 
-- [ ] Next.js 15(App Router) + React 19 + TypeScript **strict** 초기화 → 산출: `package.json`, `tsconfig.json`, `next.config.ts`
-- [ ] `tsconfig` strict 확인 + `@/*`→`src/*` path alias → 산출: `tsconfig.json`
-- [ ] Tailwind v4 + PostCSS 설정 → 산출: `postcss.config.mjs`, `src/app/globals.css`(스텁)
-- [ ] Vitest + RTL + jsdom + `@testing-library/jest-dom` 설정(`environment: jsdom`, setup 파일, `@/` alias 동기화) → 산출: `vitest.config.ts`, `src/test/setup.ts`
-- [ ] `package.json` scripts 확정: `dev` / `build` / `lint` / `typecheck`(`tsc --noEmit`) / `test`(`vitest run`) — `../CLAUDE.md`·`API.md`와 일치
-- [ ] 폴더 골격 + `.gitkeep`: `src/{app,components,lib,services,types,styles,test}`
-- [ ] `.env.local.example` 작성(`YOUTUBE_API_KEY=` + 주석), `.gitignore`에 `.env*`(단 `.example`은 추적) 확인
+- [x] Next.js 15(App Router) + React 19 + TypeScript **strict** 초기화 → 산출: `package.json`, `tsconfig.json`, `next.config.ts`
+- [x] `tsconfig` strict 확인 + `@/*`→`src/*` path alias → 산출: `tsconfig.json`
+- [x] Tailwind v4 + PostCSS 설정 → 산출: `postcss.config.mjs`, `src/app/globals.css`(스텁)
+- [x] Vitest + RTL + jsdom + `@testing-library/jest-dom` 설정(`environment: jsdom`, setup 파일, `@/` alias 동기화) → 산출: `vitest.config.ts`, `src/test/setup.ts`
+- [x] `package.json` scripts 확정: `dev` / `build` / `lint` / `typecheck`(`tsc --noEmit`) / `test`(`vitest run`) — `../CLAUDE.md`·`API.md`와 일치
+- [x] 폴더 골격 + `.gitkeep`: `src/{app,components,lib,services,types,styles,test}`
+- [x] `.env.local.example` 작성(`YOUTUBE_API_KEY=` + 주석), `.gitignore`에 `.env*`(단 `.example`은 추적) 확인
 
 **게이트·수용**: `npm run typecheck` / `npm run lint` / `npm run test`(0건 통과) / `npm run dev` 부팅 200.
 
