@@ -65,6 +65,11 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* spin: 장식이 아니라 로딩 인디케이터용 functional 모션(Spinner 전용). */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 @utility fade-in {
   animation: fade-in var(--duration-base) var(--ease-standard) both;
 }
@@ -73,9 +78,14 @@
   animation: slide-up var(--duration-base) var(--ease-standard) both;
 }
 
+@utility spin {
+  animation: spin 1s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .fade-in,
-  .slide-up {
+  .slide-up,
+  .spin {
     animation: none;
   }
 }
