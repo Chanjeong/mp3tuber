@@ -26,7 +26,7 @@
 ## 진행률
 | Phase | 0 Infra | 1 Design | 2 Domain | 3 Search | 4 Convert | 5 Frontend | 6 QA |
 |-------|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| 상태  | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 상태  | ✅ | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 (상태: ⬜ 미착수 · 🟦 진행중 · ✅ 완료)
 
@@ -98,21 +98,21 @@
 ## Phase 3 — 검색: 서비스 + API 라우트 (TDD) `[Backend]`
 **목표**: YouTube `search.list`를 서버에서만 호출·매핑하고, `/api/search`로 통일 응답/에러를 낸다.
 
-- [ ] 픽스처: 샘플 `search.list` 응답 JSON(엔티티 포함 title, 썸네일 일부 누락 케이스 포함) → 산출: `src/test/fixtures/search.sample.json`
-- [ ] **테스트 먼저** `services/youtube.test.ts`(`fetch` 모킹) → 케이스:
+- [x] 픽스처: 샘플 `search.list` 응답 JSON(엔티티 포함 title, 썸네일 일부 누락 케이스 포함) → 산출: `src/test/fixtures/search.sample.json`
+- [x] **테스트 먼저** `services/youtube.test.ts`(`fetch` 모킹) → 케이스:
   - 정상 매핑: `id.videoId`, `snippet.title` 엔티티 디코딩(`&amp;`→`&`, `&#39;`→`'`), `channelTitle`, 썸네일 medium·high 우선순위·없으면 default
   - 빈 결과 → `[]`
   - 403 quota → `QUOTA_EXCEEDED`
   - 5xx/네트워크 실패 → `UPSTREAM_ERROR`
-- [ ] `services/youtube.ts` 구현(`searchVideos(q, maxResults)`, `type=video`, 옵션 `regionCode=KR`/`relevanceLanguage=ko`, 키는 서버 env에서만)
-- [ ] **테스트 먼저** `app/api/search/route.test.ts`(서비스 모킹) → 케이스:
+- [x] `services/youtube.ts` 구현(`searchVideos(q, maxResults)`, `type=video`, 옵션 `regionCode=KR`/`relevanceLanguage=ko`, 키는 서버 env에서만)
+- [x] **테스트 먼저** `app/api/search/route.test.ts`(서비스 모킹) → 케이스:
   - 200 `{ items }`, 빈결과 200 `items: []`
   - `q` 공백 → 400 `MISSING_QUERY`
   - maxResults 범위밖 → 400 `INVALID_MAX_RESULTS`
   - 키 미설정 → 500 `CONFIG_ERROR`
   - quota → 503 `QUOTA_EXCEEDED`, upstream → 502 `UPSTREAM_ERROR`
   - 비-GET → 405
-- [ ] `app/api/search/route.ts` 구현(`export const runtime = 'nodejs'`, 통일 에러 `{ error: { code, message } }`, 키/스택은 `console.error`로만)
+- [x] `app/api/search/route.ts` 구현(`export const runtime = 'nodejs'`, 통일 에러 `{ error: { code, message } }`, 키/스택은 `console.error`로만)
 
 **게이트·수용**: 서비스+라우트 테스트 green + 게이트 3종, **응답 본문에 키 미노출** 확인.
 
