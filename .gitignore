@@ -6,3 +6,5 @@ tsconfig.tsbuildinfo
 
 # review gate logs (scripts/run-gates.mjs)
 .gates/
+
+.env.*
