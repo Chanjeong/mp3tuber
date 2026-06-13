@@ -26,7 +26,7 @@
 ## 진행률
 | Phase | 0 Infra | 1 Design | 2 Domain | 3 Search | 4 Convert | 5 Frontend | 6 QA |
 |-------|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| 상태  | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 상태  | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 (상태: ⬜ 미착수 · 🟦 진행중 · ✅ 완료)
 
@@ -55,11 +55,11 @@
 ## Phase 1 — 디자인 토큰 & 루트 레이아웃 `[Design]`
 **목표**: `UI_GUIDE.md`의 토큰을 단일 소스로 이식하고, 모든 UI가 semantic 유틸만 쓰게 만든다.
 
-- [ ] `src/styles/tokens.css`: `UI_GUIDE.md`의 CSS custom properties **전량 이식**(color/border/text/accent/state/radius/space/elevation/motion) → 단일 소스
-- [ ] `globals.css`: Tailwind v4 `@theme`로 토큰→semantic 유틸 매핑(`bg-surface`, `text-text-muted`, `rounded-card` 등) ⛓ 의존: `tokens.css`
-- [ ] 타이포 역할 유틸 정의: `text-display/title/heading/body/body-sm/caption/code`(size+weight+leading 묶음)
-- [ ] `app/layout.tsx`: 다크 배경(`bg-bg text-text`), tokens/globals import, 콘텐츠 max-width 컨테이너(좌측 정렬)
-- [ ] 모션 유틸 `fade-in`/`slide-up`만(`--duration-base`/`--ease-standard`) — 글로우·펄스 금지
+- [x] `src/styles/tokens.css`: `UI_GUIDE.md`의 CSS custom properties **전량 이식**(color/border/text/accent/state/radius/space/elevation/motion) → 단일 소스
+- [x] `globals.css`: Tailwind v4 `@theme`로 토큰→semantic 유틸 매핑(`bg-surface`, `text-text-muted`, `rounded-card` 등) ⛓ 의존: `tokens.css`
+- [x] 타이포 역할 유틸 정의: `text-display/title/heading/body/body-sm/caption/code`(size+weight+leading 묶음)
+- [x] `app/layout.tsx`: 다크 배경(`bg-bg text-text`), tokens/globals import, 콘텐츠 max-width 컨테이너(좌측 정렬)
+- [x] 모션 유틸 `fade-in`/`slide-up`만(`--duration-base`/`--ease-standard`) — 글로우·펄스 금지
 
 **게이트·수용**: 임시 마크업으로 토큰 소비 시각 확인, **raw/arbitrary 값 0**(`bg-[#..]`/`text-[13px]`/`rounded-2xl` = 리뷰 blocker), 게이트 3종.
 
