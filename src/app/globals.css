@@ -1,0 +1,4 @@
+@import "tailwindcss";
+
+/* Phase 0 스텁: Tailwind v4 진입점만 둔다.
+   디자인 토큰(tokens.css)·@theme 매핑·타이포 역할 유틸은 Phase 1에서 이식한다. */
