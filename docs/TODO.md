@@ -26,7 +26,7 @@
 ## 진행률
 | Phase | 0 Infra | 1 Design | 2 Domain | 3 Search | 4 Convert | 5 Frontend | 6 QA |
 |-------|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| 상태  | ✅ | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| 상태  | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | ⬜ |
 
 (상태: ⬜ 미착수 · 🟦 진행중 · ✅ 완료)
 
@@ -126,22 +126,22 @@
 ## Phase 4 — 변환: lib + convert API (TDD) `[Backend]`
 **목표**: yt-dlp+ffmpeg를 안전하게(배열 인자) 호출해 파일을 만들고, `/api/convert`로 스트리밍 다운로드한다.
 
-- [ ] **테스트 먼저** `lib/convert.test.ts`(`youtube-dl-exec`/`fs` 모듈 모킹, 바이너리 **비호출**) → 케이스:
-  - mp3 인자 배열: `-x --audio-format mp3 --audio-quality 0`
+- [x] **테스트 먼저** `lib/convert.test.ts`(`youtube-dl-exec`/`fs` 모듈 모킹, 바이너리 **비호출**) → 케이스:
+  - mp3 인자 배열: `-x --audio-format mp3 --audio-quality 0` (타입 안전 camelCase → 동치 `--extract-audio …`)
   - mp4 인자 배열: `-f bestvideo+bestaudio/best --merge-output-format mp4`
   - 공통: `--ffmpeg-location <ffmpeg-static>`, `-o <os.tmpdir()/고유명>`
   - **셸 문자열 보간 없음**(전부 배열 인자로 전달)
   - AbortSignal 발화 → 자식 프로세스 kill 호출
   - 타임아웃 초과 → kill → 실패 반환
-- [ ] `lib/convert.ts` 구현(`convertToFile({ videoId, format, signal })` → temp 경로 반환, 고유 파일명 = `videoId + nonce`)
-- [ ] **테스트 먼저** `app/api/convert/route.test.ts`(`lib/convert`·`fs` 모킹) → 케이스:
+- [x] `lib/convert.ts` 구현(`convertToFile({ videoId, format, signal })` → temp 경로 반환, 고유 파일명 = `videoId + nonce`)
+- [x] **테스트 먼저** `app/api/convert/route.test.ts`(`lib/convert`·`fs` 모킹) → 케이스:
   - 검증 실패 400: `INVALID_VIDEO_ID` / `INVALID_FORMAT`
   - 성공 헤더: `Content-Type` `audio/mpeg`|`video/mp4`, `Content-Disposition: attachment; filename*=UTF-8''…`, 가능 시 `Content-Length`
   - 영상 접근불가 → 404 `VIDEO_UNAVAILABLE`
   - 바이너리 없음 → 500 `CONVERTER_UNAVAILABLE`
   - 변환실패/타임아웃 → 500 `CONVERSION_FAILED`
   - **try/finally temp 삭제 호출** 확인, abort 시 프로세스 kill, 비-GET 405
-- [ ] `app/api/convert/route.ts` 구현(`runtime = 'nodejs'`, `fs.stat`→`Content-Length`, `Readable.toWeb()` 스트리밍, `try/finally` 정리, `request.signal` 구독)
+- [x] `app/api/convert/route.ts` 구현(`runtime = 'nodejs'`, `fs.stat`→`Content-Length`, `Readable.toWeb()` 스트리밍, `try/finally` 정리, `request.signal` 구독)
 
 **게이트·수용**: convert lib+라우트 테스트 green + 게이트 3종. (실제 바이너리 변환은 Phase 6 수동검증.)
 
