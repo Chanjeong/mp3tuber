@@ -12,6 +12,11 @@ import { Readable } from 'node:stream';
 // child_process/fs/스트림을 쓰므로 Node 런타임 필수(Edge 불가).
 export const runtime = 'nodejs';
 
+// 변환은 다운로드+트랜스코딩이라 기본 함수 타임아웃을 넘긴다.
+// 플랜이 허용하는 최대치까지 올린다(Hobby는 60s로 자동 캡, Pro/Fluid는 300s).
+// 그래도 긴 영상은 한계를 넘을 수 있다(서버리스 구조적 제약).
+export const maxDuration = 300;
+
 // 에러 코드 → HTTP 상태(docs/API.md 카탈로그).
 const STATUS_BY_CODE: Record<string, number> = {
   INVALID_VIDEO_ID: 400,
