@@ -5,11 +5,20 @@ import os from 'node:os';
 // youtube-dl-exec와 ffmpeg-static을 모킹해 인자 구성·프로세스 수명만 검증한다.
 vi.mock('youtube-dl-exec', () => ({ default: { exec: vi.fn() } }));
 vi.mock('ffmpeg-static', () => ({ default: '/fake/ffmpeg.exe' }));
+// 쿠키 temp 파일 쓰기/정리는 디스크 없이 스파이로만 검증한다.
+vi.mock('node:fs/promises', () => {
+  const writeFile = vi.fn().mockResolvedValue(undefined);
+  const rm = vi.fn().mockResolvedValue(undefined);
+  return { writeFile, rm, default: { writeFile, rm } };
+});
 
 import youtubeDl from 'youtube-dl-exec';
+import { writeFile, rm } from 'node:fs/promises';
 import { convertToFile, buildFlags, ConvertError, CONVERT_TIMEOUT_MS } from './convert';
 
 const mockedExec = vi.mocked(youtubeDl.exec);
+const mockedWriteFile = vi.mocked(writeFile);
+const mockedRm = vi.mocked(rm);
 
 // await 가능한 subprocess 흉내: resolve/reject를 외부에서 제어 + kill 스파이.
 function makeProc() {
@@ -65,15 +74,46 @@ describe('buildFlags', () => {
       '/tmp/out.mp4',
     ]);
   });
+
+  it('appends --proxy/--cookies when extra options are provided (Vercel IP 우회용)', async () => {
+    const { args } = (await vi.importActual('youtube-dl-exec')) as {
+      args: (flags: Record<string, unknown>) => string[];
+    };
+    const flags = buildFlags('mp3', '/tmp/out.mp3', '/fake/ffmpeg.exe', {
+      proxy: 'http://127.0.0.1:8080',
+      cookies: '/tmp/cookies-abc.txt',
+    });
+    expect(args(flags)).toEqual([
+      '--extract-audio',
+      '--audio-format',
+      'mp3',
+      '--audio-quality',
+      '0',
+      '--ffmpeg-location',
+      '/fake/ffmpeg.exe',
+      '--output',
+      '/tmp/out.mp3',
+      '--proxy',
+      'http://127.0.0.1:8080',
+      '--cookies',
+      '/tmp/cookies-abc.txt',
+    ]);
+  });
 });
 
 describe('convertToFile', () => {
   beforeEach(() => {
     mockedExec.mockReset();
+    mockedWriteFile.mockClear().mockResolvedValue(undefined);
+    mockedRm.mockClear().mockResolvedValue(undefined);
+    delete process.env.YTDLP_PROXY;
+    delete process.env.YOUTUBE_COOKIES;
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    delete process.env.YTDLP_PROXY;
+    delete process.env.YOUTUBE_COOKIES;
   });
 
   it('calls yt-dlp with the watch URL + structured flags, returns a unique tmpdir path', async () => {
@@ -126,6 +166,53 @@ describe('convertToFile', () => {
     for (const value of Object.values(flags as Record<string, unknown>)) {
       if (typeof value === 'string') expect(value).not.toMatch(/\s--?[a-z]/i);
     }
+  });
+
+  it('passes YTDLP_PROXY env through to yt-dlp as --proxy', async () => {
+    process.env.YTDLP_PROXY = 'http://127.0.0.1:8080';
+    const proc = makeProc();
+    proc.resolve({ exitCode: 0 });
+    mockedExec.mockReturnValue(proc as never);
+
+    await convertToFile({ videoId: VID, format: 'mp3' });
+
+    const [, flags] = mockedExec.mock.calls[0];
+    expect(flags).toMatchObject({ proxy: 'http://127.0.0.1:8080' });
+  });
+
+  it('writes YOUTUBE_COOKIES to a tmp file, passes its path, and removes it afterward', async () => {
+    process.env.YOUTUBE_COOKIES = '# Netscape HTTP Cookie File\nyoutube.com\tTRUE\t/\tTRUE\t0\tFOO\tbar';
+    const proc = makeProc();
+    proc.resolve({ exitCode: 0 });
+    mockedExec.mockReturnValue(proc as never);
+
+    await convertToFile({ videoId: VID, format: 'mp3' });
+
+    // 쿠키 내용이 os.tmpdir() 하위 파일로 기록되고, 그 경로가 --cookies로 전달된다.
+    expect(mockedWriteFile).toHaveBeenCalledTimes(1);
+    const [cookiePath, contents] = mockedWriteFile.mock.calls[0];
+    expect(String(cookiePath).startsWith(os.tmpdir())).toBe(true);
+    expect(String(cookiePath)).toMatch(/cookies-[0-9a-f]+\.txt$/);
+    expect(contents).toBe(process.env.YOUTUBE_COOKIES);
+
+    const [, flags] = mockedExec.mock.calls[0];
+    expect((flags as { cookies?: string }).cookies).toBe(cookiePath);
+
+    // 변환이 끝나면 쿠키 temp는 정리된다(비밀이 디스크에 남지 않게).
+    expect(mockedRm).toHaveBeenCalledWith(cookiePath, expect.objectContaining({ force: true }));
+  });
+
+  it('does not write a cookie file or set proxy when env is unset', async () => {
+    const proc = makeProc();
+    proc.resolve({ exitCode: 0 });
+    mockedExec.mockReturnValue(proc as never);
+
+    await convertToFile({ videoId: VID, format: 'mp3' });
+
+    expect(mockedWriteFile).not.toHaveBeenCalled();
+    const [, flags] = mockedExec.mock.calls[0];
+    expect((flags as { proxy?: string }).proxy).toBeUndefined();
+    expect((flags as { cookies?: string }).cookies).toBeUndefined();
   });
 
   it('kills the subprocess when the abort signal fires', async () => {

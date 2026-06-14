@@ -6,6 +6,7 @@ import youtubeDl, { type Flags } from 'youtube-dl-exec';
 import ffmpegStatic from 'ffmpeg-static';
 import os from 'node:os';
 import path from 'node:path';
+import { writeFile, rm } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
 import type { ConvertFormat } from '@/types';
 
@@ -29,14 +30,33 @@ export type ConvertArgs = {
   signal?: AbortSignal;
 };
 
+/** 호스팅 환경(특히 클라우드 데이터센터 IP)에서 봇 차단을 우회하기 위한 선택적 옵션. */
+export type ConvertExtra = {
+  /** `--proxy` — yt-dlp 트래픽을 우회시킬 HTTP/SOCKS 프록시(예: Cloudflare WARP). */
+  proxy?: string;
+  /** `--cookies` — YouTube 로그인 세션 cookies.txt 파일 경로(인증 요청으로 위장). */
+  cookies?: string;
+};
+
 /**
  * 포맷별 yt-dlp 플래그를 구성한다(camelCase = 타입 안전, 런타임엔 `-x/-f/-o` 동치 배열).
  * - mp3: `--extract-audio --audio-format mp3 --audio-quality 0`
  * - mp4: `--format bestvideo+bestaudio/best --merge-output-format mp4`
  * - 공통: `--ffmpeg-location <ffmpeg-static>`, `--output <tmp 경로>`
+ * - 선택: `--proxy`/`--cookies` (값이 있을 때만 — 호스팅 환경 IP 차단 우회용).
  */
-export function buildFlags(format: ConvertFormat, outPath: string, ffmpegLocation: string): Flags {
-  const common: Flags = { ffmpegLocation, output: outPath };
+export function buildFlags(
+  format: ConvertFormat,
+  outPath: string,
+  ffmpegLocation: string,
+  extra?: ConvertExtra,
+): Flags {
+  const common: Flags = {
+    ffmpegLocation,
+    output: outPath,
+    ...(extra?.proxy ? { proxy: extra.proxy } : {}),
+    ...(extra?.cookies ? { cookies: extra.cookies } : {}),
+  };
   if (format === 'mp3') {
     return { extractAudio: true, audioFormat: 'mp3', audioQuality: 0, ...common };
   }
@@ -79,7 +99,21 @@ export async function convertToFile({ videoId, format, signal }: ConvertArgs): P
   const outPath = path.join(os.tmpdir(), `${videoId}-${nonce}.${format}`);
   const url = `https://www.youtube.com/watch?v=${videoId}`;
 
-  const subprocess = youtubeDl.exec(url, buildFlags(format, outPath, ffmpegLocation));
+  // 호스팅 환경 IP 차단 우회(서버 전용 env). 값이 있을 때만 yt-dlp에 전달한다.
+  // - YTDLP_PROXY: 프록시 URL을 그대로 --proxy로.
+  // - YOUTUBE_COOKIES: cookies.txt 본문 → temp 파일로 써서 --cookies 경로로(비밀이라 finally에서 정리).
+  const proxy = process.env.YTDLP_PROXY?.trim() || undefined;
+  let cookiePath: string | undefined;
+  const cookiesContent = process.env.YOUTUBE_COOKIES;
+  if (cookiesContent && cookiesContent.trim()) {
+    cookiePath = path.join(os.tmpdir(), `cookies-${randomBytes(6).toString('hex')}.txt`);
+    await writeFile(cookiePath, cookiesContent, 'utf8');
+  }
+
+  const subprocess = youtubeDl.exec(
+    url,
+    buildFlags(format, outPath, ffmpegLocation, { proxy, cookies: cookiePath }),
+  );
 
   // abort: 클라가 탭을 닫으면 자식 프로세스를 즉시 kill.
   const onAbort = () => {
@@ -107,5 +141,7 @@ export async function convertToFile({ videoId, format, signal }: ConvertArgs): P
   } finally {
     if (timer) clearTimeout(timer);
     signal?.removeEventListener('abort', onAbort);
+    // 쿠키 temp는 비밀이므로 변환이 끝나면(성공/실패 무관) 즉시 지운다.
+    if (cookiePath) await rm(cookiePath, { force: true }).catch(() => {});
   }
 }
