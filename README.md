@@ -51,18 +51,39 @@ npm run typecheck  # 타입 체크 (tsc --noEmit)
 npm run test       # 단위/컴포넌트 테스트 (Vitest + RTL)
 ```
 
-## 배포 환경에서 변환이 500일 때 (IP 차단)
+## 배포 (Docker 상시 서버 — 긴 영상까지)
 
-로컬(집 IP)에서는 잘 되는데 **클라우드(Vercel 등)에 올리면 `/api/convert`가 500**이라면, 원인은 보통 둘이다.
+> ⚠️ **Vercel 같은 서버리스에는 배포하지 말 것.** 함수 타임아웃(최대 5분)·`/tmp` 512MB 제약 때문에
+> 긴 영상·플레이리스트는 **구조적으로 실패**하고, 바이너리(yt-dlp/ffmpeg)도 함수 번들에서 누락돼
+> `spawn ENOENT`(500)가 난다. 이 앱은 **상시 구동 서버(Docker)** 가 맞다 — 타임아웃·용량 제한이 없어
+> 긴 영상도 변환되고, 바이너리는 이미지에 항상 포함된다.
 
-1. **바이너리 누락** — yt-dlp/ffmpeg 실행파일이 서버리스 함수 번들에 포함되지 않아 `spawn ENOENT`. `next.config.ts`의 `serverExternalPackages` + `outputFileTracingIncludes`로 함수에 강제 포함시켜 해결한다(이미 설정됨).
-2. **YouTube 봇 차단** — 데이터센터 IP는 *"Sign in to confirm you're not a bot"*으로 막힌다. 다음 **서버 전용 env**로 우회한다(값이 있을 때만 적용):
-   - `YOUTUBE_COOKIES` — 로그인 세션 `cookies.txt` 본문(Netscape 포맷). 인증된 요청으로 위장.
-   - `YTDLP_PROXY` — yt-dlp 트래픽을 우회시킬 프록시 URL(Cloudflare WARP, 레지덴셜 프록시 등).
+이 레포에는 [`Dockerfile`](Dockerfile)과 Render용 [`render.yaml`](render.yaml)이 포함돼 있다.
 
-   Vercel 기준: **Project → Settings → Environment Variables**에 위 값을 넣고 재배포한다. `cookies.txt`는 브라우저 확장으로 export해 **내용 전체**를 `YOUTUBE_COOKIES`에 붙여넣는다(파일 커밋 금지).
+### A. Render (무료·공개 URL — Vercel과 가장 비슷)
 
-> ⚠️ **서버리스(Vercel)의 구조적 한계**: 함수 타임아웃(`maxDuration`, 최대 5분)과 `/tmp` 512MB 제약 탓에 **긴 영상·플레이리스트 모음은 우회를 해도 실패**할 수 있다. 안정적으로 쓰려면 상시 구동 서버(VPS/Docker)가 더 적합하다.
+1. Render 대시보드 → **New → Blueprint** → 이 레포 연결 (`render.yaml` 자동 인식).
+2. **Environment**에 `YOUTUBE_API_KEY` 입력(검색용 필수). 변환 IP가 막히면 `YOUTUBE_COOKIES`도 추가.
+3. 배포되면 `https://<이름>.onrender.com` URL로 어디서든 접속.
+
+### B. VPS / 집 서버 (Docker 직접 실행)
+
+```bash
+docker build -t mp3tuber .
+docker run -d -p 3000:3000 \
+  -e YOUTUBE_API_KEY=발급받은_키 \
+  -e YOUTUBE_COOKIES="$(cat cookies.txt)" \   # (선택) IP 차단 우회
+  --name mp3tuber mp3tuber
+```
+
+### 변환 IP 차단 우회 (서버 전용 env, 값이 있을 때만 적용)
+
+클라우드 데이터센터 IP는 YouTube 봇 차단(*"Sign in to confirm you're not a bot"*)에 걸릴 수 있다.
+
+- `YOUTUBE_COOKIES` — 로그인 세션 `cookies.txt` **본문 전체**(Netscape 포맷). 브라우저 확장으로 export해 붙여넣는다. 인증된 요청으로 위장해 차단을 푼다. (파일·값 모두 커밋 금지)
+- `YTDLP_PROXY` — yt-dlp 트래픽을 우회시킬 프록시 URL(Cloudflare WARP, 레지덴셜 프록시 등).
+
+> 집 네트워크(가정용 IP)에서 돌리면 봇 차단이 거의 없어 위 우회가 불필요할 때가 많다.
 
 ## 문서
 

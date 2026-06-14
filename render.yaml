@@ -1,0 +1,20 @@
+# Render Blueprint — Docker 상시 구동 웹서비스로 배포한다.
+# Render는 무료 플랜에서도 공개 URL을 주고, 서버리스가 아니라 상시 컨테이너라
+# 함수 타임아웃/512MB 제약이 없어 긴 영상도 변환된다.
+# 사용법: Render 대시보드 → New → Blueprint → 이 레포 연결. env 값은 대시보드에서 입력한다.
+services:
+  - type: web
+    name: mp3tuber
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      # YouTube Data API v3 키 (검색용, 필수). 대시보드에서 값 입력.
+      - key: YOUTUBE_API_KEY
+        sync: false
+      # (선택) 봇 차단 우회용. 데이터센터 IP가 막히면 cookies.txt 본문을 넣는다.
+      - key: YOUTUBE_COOKIES
+        sync: false
+      # (선택) yt-dlp 프록시 URL.
+      - key: YTDLP_PROXY
+        sync: false
