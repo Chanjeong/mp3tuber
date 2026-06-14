@@ -6,6 +6,9 @@
 # 1) 의존성 — youtube-dl-exec(yt-dlp)·ffmpeg-static 바이너리가 postinstall로 node_modules에 받아진다.
 FROM node:22-bookworm-slim AS deps
 WORKDIR /app
+# youtube-dl-exec의 preinstall은 python 존재를 검사한다. 바이너리 "다운로드"엔 python이 필요 없고,
+# 실제 "실행"에 필요한 python3는 runner 단계에 설치하므로, 빌드 단계의 이 검사만 건너뛴다.
+ENV YOUTUBE_DL_SKIP_PYTHON_CHECK=1
 COPY package.json package-lock.json ./
 RUN npm ci
 
@@ -23,9 +26,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
-# 번들 yt-dlp(linux)는 python3 런타임이, HTTPS 요청엔 ca-certificates가 필요하다.
+# 번들 yt-dlp(linux)는 python 런타임이, HTTPS 요청엔 ca-certificates가 필요하다.
+# yt-dlp가 `python`/`python3` 어느 쪽을 호출해도 되도록 심볼릭 링크까지 건다.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 ca-certificates \
+  && ln -sf /usr/bin/python3 /usr/bin/python \
   && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
