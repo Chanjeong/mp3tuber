@@ -137,6 +137,15 @@ export async function convertToFile({ videoId, format, signal }: ConvertArgs): P
     await Promise.race([subprocess, timeout]);
     return outPath;
   } catch (err) {
+    // 실패 원인을 서버 로그로 남긴다(클라엔 통일 코드만 노출). yt-dlp stderr엔 쿠키 "내용"이
+    // 담기지 않으므로 안전 — 배포 환경에서 봇 차단/포맷 오류 등을 진단하는 유일한 단서다.
+    const e = err as { code?: string; stderr?: string; message?: string };
+    console.error('[convert] failed', {
+      videoId,
+      format,
+      code: e?.code,
+      detail: (e?.stderr || e?.message || '').slice(0, 1000),
+    });
     throw classifyError(err);
   } finally {
     if (timer) clearTimeout(timer);

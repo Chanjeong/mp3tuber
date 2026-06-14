@@ -106,6 +106,8 @@ describe('convertToFile', () => {
     mockedExec.mockReset();
     mockedWriteFile.mockClear().mockResolvedValue(undefined);
     mockedRm.mockClear().mockResolvedValue(undefined);
+    // 실패 경로는 진단용 console.error를 남긴다 — 테스트 출력은 조용히.
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     delete process.env.YTDLP_PROXY;
     delete process.env.YOUTUBE_COOKIES;
   });
